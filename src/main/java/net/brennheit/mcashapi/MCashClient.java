@@ -74,7 +74,7 @@ public class MCashClient {
      * @param testbedToken
      */
     public MCashClient(String baseUrl, String merchantId, String userId, String authKey, String authMethod, String posId, String ledger, String testbedToken) {
-        MCashUrl.setBaseUrl(baseUrl);
+        MCashUrl.setBaseUri(baseUrl);
         this.httpHeaders = MakeHeaders(merchantId, userId, authKey, authMethod, testbedToken);
         this.posId = posId;
         this.ledger = ledger;
@@ -95,7 +95,7 @@ public class MCashClient {
     public boolean IsReady() {
         Socket socket = null;
         try {
-            String hostname = (new URI(MCashUrl.getBaseUrl())).getHost();
+            String hostname = (new URI(MCashUrl.getBaseUri())).getHost();
             socket = new Socket(hostname, 80);
             return true;
         } catch (IOException ex) {
@@ -235,7 +235,7 @@ public class MCashClient {
      * @param ticketId
      * @return
      */
-    public PaymentRequestOutcome PaymentRequestOutcome(String ticketId){
+    public PaymentRequestOutcome GetPaymentRequestOutcome(String ticketId){
         MCashUrl url = MCashUrl.PaymentRequestOutcome(ticketId);
         try {
             HttpRequest request = requestFactory.buildGetRequest(url);
@@ -260,6 +260,100 @@ public class MCashClient {
         } else {
             return response;
         }
+    }
+    
+    /**
+     *
+     * @return
+     */
+    public LedgerOverview GetLedgerOverview(){
+        MCashUrl url = MCashUrl.Ledger();
+        try {
+            HttpRequest request = requestFactory.buildGetRequest(url);
+            HttpResponse response = Request(request);
+            LedgerOverview ledgerOverview = response.parseAs(LedgerOverview.class);
+            return ledgerOverview;
+        } catch (IOException ex) {
+            Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+    
+    /**
+     *
+     * @param ledger
+     * @return
+     */
+    public LedgerDetail GetLedgerDetail(String ledger){
+        MCashUrl url = MCashUrl.LedgerDetail(ledger);
+        try {
+            HttpRequest request = requestFactory.buildGetRequest(url);
+            HttpResponse response = Request(request);
+            LedgerDetail ledgerDetail = response.parseAs(LedgerDetail.class);
+            return ledgerDetail;
+        } catch (IOException ex) {
+            Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+    
+    /**
+     * Uses ledger specified in constructor
+     * @return
+     */
+    public LedgerDetail GetLedgerDetail(){
+        return GetLedgerDetail(ledger);
+    }
+    
+    /**
+     *
+     * @param ledger
+     * @param reportId
+     * @return
+     */
+    public ReportInfo GetReportInfo(String ledger, String reportId){
+        MCashUrl url = MCashUrl.Report(ledger, reportId);
+        try {
+            HttpRequest request = requestFactory.buildGetRequest(url);
+            HttpResponse response = Request(request);
+            ReportInfo reportInfo = response.parseAs(ReportInfo.class);
+            return reportInfo;
+        } catch (IOException ex) {
+            Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+    
+    /**
+     * Uses ledger specified in constructor
+     * @param reportId
+     * @return
+     */
+    public ReportInfo GetReportInfo(String reportId){
+        return GetReportInfo(ledger, reportId);
+    }
+    
+    /**
+     *
+     * @param ledger
+     * @param reportId
+     */
+    public void CloseReport(String ledger, String reportId){
+        MCashUrl url = MCashUrl.Report(ledger, reportId);
+        try {
+            HttpRequest request = requestFactory.buildPutRequest(url, null);
+            Request(request);
+        } catch (IOException ex) {
+            Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    /**
+     * Uses ledger specified in constructor
+     * @param reportId
+     */
+    public void CloseReport(String reportId){
+        CloseReport(ledger, reportId);
     }
 
     private JsonHttpContent BuildJsonContent(Object object) {

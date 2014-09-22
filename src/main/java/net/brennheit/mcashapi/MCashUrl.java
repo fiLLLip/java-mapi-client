@@ -34,51 +34,63 @@ import com.google.api.client.http.GenericUrl;
 public class MCashUrl extends GenericUrl {
 
     public MCashUrl(String encodedUrl) {
-        super(encodedUrl);
+        super(baseUri + encodedUrl);
     }
 
-    private static String baseUrl = "https://api.mca.sh/merchant/v1";
+    private static String baseUri = "https://api.mca.sh/merchant/v1";
 
-    public static String getBaseUrl() {
-        return baseUrl;
+    public static String getBaseUri() {
+        return baseUri;
     }
 
-    public static void setBaseUrl(String baseUrl) {
-        MCashUrl.baseUrl = baseUrl;
+    public static void setBaseUri(String baseUrl) {
+        MCashUrl.baseUri = baseUrl;
     }
 
     public static MCashUrl PaymentRequest() {
-        String url = String.format("%s/payment_request/", baseUrl);
-        return new MCashUrl(url);
+        return new MCashUrl("/payment_request/");
     }
 
     public static MCashUrl PaymentRequest(String tid) {
-        String url = String.format("%s/payment_request/%s/", baseUrl, tid);
+        String url = String.format("/payment_request/%s/", tid);
         return new MCashUrl(url);
     }
 
     public static MCashUrl PaymentRequestOutcome(String tid) {
-        String url = String.format("%s/payment_request/%s/outcome/", baseUrl, tid);
+        String url = String.format("/payment_request/%s/outcome/", tid);
         return new MCashUrl(url);
     }
 
     public static MCashUrl Shortlink() {
-        String url = String.format("%s/shortlink/", baseUrl);
-        return new MCashUrl(url);
+        return new MCashUrl("/shortlink/");
     }
 
     public static MCashUrl Shortlink(String shortlinkId) {
-        String url = String.format("%s/shortlink/%s/", baseUrl, shortlinkId);
+        String url = String.format("/shortlink/%s/", shortlinkId);
         return new MCashUrl(url);
     }
 
     public static MCashUrl ShortlinkLastScan(String shortlinkId) {
-        String url = String.format("%s/shortlink/%s/last_scan/", baseUrl, shortlinkId);
+        String url = String.format("/shortlink/%s/last_scan/", shortlinkId);
         return new MCashUrl(url);
     }
 
     public static MCashUrl ShortlinkLastScan(String shortlinkId, long ttl) {
-        String url = String.format("%s/shortlink/%s/last_scan/?ttl=%s", baseUrl, shortlinkId, ttl);
+        String url = String.format("/shortlink/%s/last_scan/?ttl=%s", shortlinkId, ttl);
+        return new MCashUrl(url);
+    }
+        
+    public static MCashUrl Ledger() {
+        return new MCashUrl("/ledger/");
+    }
+        
+    public static MCashUrl LedgerDetail(String ledger) {
+        String url = String.format("/ledger/%s/", ledger);
+        return new MCashUrl(url);
+    }
+        
+    public static MCashUrl Report(String ledger, String reportId) {
+        String url = String.format("/ledger/%s/report/%s/", ledger, reportId);
         return new MCashUrl(url);
     }
 
