@@ -23,7 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
 
@@ -31,11 +31,9 @@ import com.google.api.client.util.Key;
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class ShortlinkLastScan {
-
+public class Shortlink {
     @Key
-    public String id;
-    
+    public String callback_uri;
     @Key
-    public String argstring;
+    public String serial_number;
 }

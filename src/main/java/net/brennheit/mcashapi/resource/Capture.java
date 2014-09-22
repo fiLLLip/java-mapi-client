@@ -23,12 +23,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
+
+import com.google.api.client.util.Key;
 
 /**
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class NoopResource {
-    
+public class Capture {
+
+    @Key
+    public String amount;
+    @Key
+    public String id;
+    @Key
+    public String additional_amount;
 }

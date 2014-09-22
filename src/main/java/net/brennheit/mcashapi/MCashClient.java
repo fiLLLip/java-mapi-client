@@ -25,6 +25,8 @@
  */
 package net.brennheit.mcashapi;
 
+import com.google.api.client.http.GenericUrl;
+import net.brennheit.mcashapi.resource.*;
 import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
@@ -43,10 +45,17 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Date;
+import java.util.Enumeration;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.brennheit.mcashapi.types.*;
+import net.brennheit.mcashapi.listener.IListenForPaymentUpdated;
+import net.brennheit.mcashapi.listener.IListenForReportClosed;
+import net.brennheit.mcashapi.listener.IListenForShortlinkScan;
 
 /**
  *
@@ -61,6 +70,16 @@ public class MCashClient {
     static final DecimalFormat MONEY_FORMAT = new DecimalFormat("#0.00", new DecimalFormatSymbols(Locale.ENGLISH));
     private final String posId;
     private final String ledger;
+    protected Vector paymentFinishedListeners;
+    protected Vector reportClosedListeners;
+    protected Vector shortlinkScannedListeners;
+    private Timer paymentFinishedTimer;
+    private Timer reportClosedTimer;
+    private Timer shortlinkScannedTimer;
+    private String globalTicketId;
+    private String openReportUri;
+    private String shortlinkId;
+    private Date shortlinkStartListeningTime;
 
     /**
      *
@@ -75,7 +94,7 @@ public class MCashClient {
      */
     public MCashClient(String baseUrl, String merchantId, String userId, String authKey, String authMethod, String posId, String ledger, String testbedToken) {
         MCashUrl.setBaseUri(baseUrl);
-        this.httpHeaders = MakeHeaders(merchantId, userId, authKey, authMethod, testbedToken);
+        this.httpHeaders = createHeaders(merchantId, userId, authKey, authMethod, testbedToken);
         this.posId = posId;
         this.ledger = ledger;
         requestFactory = HTTP_TRANSPORT.createRequestFactory(new HttpRequestInitializer() {
@@ -85,14 +104,249 @@ public class MCashClient {
                 request.setParser(new JsonObjectParser(JSON_FACTORY));
             }
         });
+    }
+
+    /**
+     * Add listener to listen for payment to finish. Finish is either status "ok" or "fail".
+     * @param listener
+     */
+    public void addPaymentFinishedEventListener(IListenForPaymentUpdated listener) {
+        if (this.paymentFinishedListeners == null) {
+            this.paymentFinishedListeners = new Vector();
+        }
+        this.paymentFinishedListeners.addElement(listener);
+    }
+
+    protected void firePaymentFinishedEvent(PaymentRequestOutcome requestOutcome) {
+        if (this.paymentFinishedListeners != null && !this.paymentFinishedListeners.isEmpty()) {
+            Enumeration e = this.paymentFinishedListeners.elements();
+            while (e.hasMoreElements()) {
+                IListenForPaymentUpdated iListenForPaymentUpdated = (IListenForPaymentUpdated) e.nextElement();
+                iListenForPaymentUpdated.paymentFinished(requestOutcome);
+
+            }
+        }
+    }
+
+    /**
+     * Start poller on payment result.
+     * @param ticketId 
+     */
+    public void startPaymentFinishedListener(String ticketId) {
+        this.globalTicketId = ticketId;
+        checkPaymentFinishedWithTimer();
+    }
+
+    private void checkPaymentFinished() {
+        if (globalTicketId == null) {
+            return;
+        }
+        PaymentRequestOutcome requestOutcome = getPaymentRequestOutcome(this.globalTicketId);
+        switch (requestOutcome.status.toLowerCase()) {
+            case "pending":
+                // Awaiting approvement by customer
+                break;
+            case "auth":
+                // Approved by customer, run capture
+                capturePaymentRequest(this.globalTicketId, null);
+                break;
+            case "ok":
+                firePaymentFinishedEvent(requestOutcome);
+                this.globalTicketId = null;
+                return;
+            case "fail":
+                firePaymentFinishedEvent(requestOutcome);
+                this.globalTicketId = null;
+                return;
+        }
+    }
+
+    private void checkPaymentFinishedWithTimer() {
+        if (paymentFinishedTimer != null) {
+            paymentFinishedTimer.cancel();
+            paymentFinishedTimer.purge();
+            paymentFinishedTimer = null;
+        }
+        checkPaymentFinished();
+        if (this.globalTicketId != null) {
+            paymentFinishedTimer = new Timer();
+            paymentFinishedTimer.schedule(new CheckPaymentFinishedTask(), 1000);
+        }
+    }
+
+    private class CheckPaymentFinishedTask extends TimerTask {
+
+        @Override
+        public void run() {
+            checkPaymentFinishedWithTimer();
+        }
+
+    }
+
+    /**
+     * Add listener to listen for shortlink to be scanned.
+     * @param listener 
+     */
+    public void addShortlinkScannedEventListener(IListenForShortlinkScan listener) {
+        if (this.shortlinkScannedListeners == null) {
+            this.shortlinkScannedListeners = new Vector();
+        }
+        this.shortlinkScannedListeners.addElement(listener);
+    }
+
+    protected void fireShortlinkScannedEvent(ShortlinkLastScan shortlinkLastScan) {
+        if (this.shortlinkScannedListeners != null && !this.shortlinkScannedListeners.isEmpty()) {
+            Enumeration e = this.shortlinkScannedListeners.elements();
+            while (e.hasMoreElements()) {
+                IListenForShortlinkScan iListenForShortlinkScan = (IListenForShortlinkScan) e.nextElement();
+                iListenForShortlinkScan.shortlinkScanned(shortlinkLastScan);
+
+            }
+        }
+    }
+
+    /**
+     * Start poller on shortlink scan.
+     * @param shortlinkId ID of shortlink
+     * @param startListeningTime Time of earliest possible scan
+     */
+    public void startShortlinkScannedListener(String shortlinkId, Date startListeningTime) {
+        this.shortlinkId = shortlinkId;
+        this.shortlinkStartListeningTime = startListeningTime;
+        checkShortlinkScannedWithTimer();
+    }
+
+    private void checkShortlinkScanned() {
+        if (this.shortlinkId == null || this.shortlinkStartListeningTime == null) {
+            return;
+        }
+        long ttl = (new Date()).getTime() - this.shortlinkStartListeningTime.getTime();
+        ShortlinkLastScan shortlinkLastScan = getShortLinkLastScan(this.shortlinkId, ttl);
+        if (shortlinkLastScan.id != null) {
+            fireShortlinkScannedEvent(shortlinkLastScan);
+            this.shortlinkId = null;
+            this.shortlinkStartListeningTime = null;
+        }
+    }
+
+    private void checkShortlinkScannedWithTimer() {
+        if (shortlinkScannedTimer != null) {
+            shortlinkScannedTimer.cancel();
+            shortlinkScannedTimer.purge();
+            shortlinkScannedTimer = null;
+        }
+        checkShortlinkScanned();
+        if (this.shortlinkId != null && this.shortlinkStartListeningTime != null) {
+            shortlinkScannedTimer = new Timer();
+            shortlinkScannedTimer.schedule(new CheckShortlinkScannedTask(), 1000);
+        }
+    }
+
+    private class CheckShortlinkScannedTask extends TimerTask {
+
+        @Override
+        public void run() {
+            checkShortlinkScannedWithTimer();
+        }
+
+    }
+
+    /**
+     * Add listener to report to be closed.
+     * @param listener 
+     */
+    public void addReportClosedEventListener(IListenForReportClosed listener) {
+        if (this.reportClosedListeners == null) {
+            this.reportClosedListeners = new Vector();
+        }
+        this.reportClosedListeners.addElement(listener);
+    }
+
+    protected void fireReportClosedEvent(ReportInfo reportInfo) {
+        if (this.reportClosedListeners != null && !this.reportClosedListeners.isEmpty()) {
+            Enumeration e = this.reportClosedListeners.elements();
+            while (e.hasMoreElements()) {
+                IListenForReportClosed iListenForPaymentUpdated = (IListenForReportClosed) e.nextElement();
+                iListenForPaymentUpdated.reportClosed(reportInfo);
+
+            }
+        }
+    }
+
+    /**
+     * Start closing report and polling for result. May take a while before
+     * event fires due to latency on report closing.
+     * @throws Exception 
+     */
+    public void startReportClosedListener() throws Exception {
+        closeOpenReport();
+    }
+
+    private void closeOpenReport() throws Exception {
+        LedgerOverview ledgerOverview = getLedgerOverview();
+        String ledgerUri = null;
+        for (String uri : ledgerOverview.uris) {
+            if (uri.contains(this.ledger)) {
+                ledgerUri = uri;
+                break;
+            }
+        }
+        if (ledgerUri == null) {
+            throw new Exception("Could not find selected ledger.");
+        }
+        LedgerDetail ledgerDetail = getLedgerDetail();
+        ReportInfo reportInfo = getReportInfoFromOpenUri(ledgerDetail.open_report_uri);
+        if (!reportInfo.status.equals("open")) {
+            throw new Exception("Already closed or closing report.");
+        }
+        closeReportFromOpenUri(ledgerDetail.open_report_uri);
+        this.openReportUri = ledgerDetail.open_report_uri;
+        reportInfo = getReportInfoFromOpenUri(this.openReportUri);
+        if (!reportInfo.status.equals("closing") && !reportInfo.status.equals("closed")) {
+            throw new Exception("Close report failed.");
+        }
+        checkReportClosedWithTimer();
+    }
+
+    private void checkReportClosed() {
+        if (this.openReportUri == null) {
+            return;
+        }
+        ReportInfo reportInfo = getReportInfoFromOpenUri(this.openReportUri);
+        if (reportInfo.status.equals("closed")) {
+            fireReportClosedEvent(reportInfo);
+            this.openReportUri = null;
+        }
+    }
+
+    private void checkReportClosedWithTimer() {
+        if (reportClosedTimer != null) {
+            reportClosedTimer.cancel();
+            reportClosedTimer.purge();
+            reportClosedTimer = null;
+        }
+        checkReportClosed();
+        if (this.openReportUri != null) {
+            reportClosedTimer = new Timer();
+            reportClosedTimer.schedule(new CheckReportClosedTask(), 2000);
+        }
+    }
+
+    private class CheckReportClosedTask extends TimerTask {
+
+        @Override
+        public void run() {
+            checkReportClosedWithTimer();
+        }
 
     }
 
     /**
      * Tries to connect to REST WebService.
+     *
      * @return success
      */
-    public boolean IsReady() {
+    public boolean isReady() {
         Socket socket = null;
         try {
             String hostname = (new URI(MCashUrl.getBaseUri())).getHost();
@@ -119,11 +373,11 @@ public class MCashClient {
      * @param ttl
      * @return
      */
-    public ShortlinkLastScan GetShortLinkLastScan(String shortlinkId, long ttl) {
+    public ShortlinkLastScan getShortLinkLastScan(String shortlinkId, long ttl) {
         MCashUrl url = MCashUrl.ShortlinkLastScan(shortlinkId, ttl);
         try {
             HttpRequest request = requestFactory.buildGetRequest(url);
-            HttpResponse response = Request(request);
+            HttpResponse response = doHttpRequest(request);
             ShortlinkLastScan lastScan = response.parseAs(ShortlinkLastScan.class);
             return lastScan;
         } catch (IOException ex) {
@@ -143,7 +397,7 @@ public class MCashClient {
      * @param callbackUri
      * @return
      */
-    public ResourceId CreatePaymentRequest(String posTicketId, String scanToken, double amount, String currency, double additionalAmount, boolean additionalAmountEdit, String callbackUri) {
+    public ResourceId createPaymentRequest(String posTicketId, String scanToken, double amount, String currency, double additionalAmount, boolean additionalAmountEdit, String callbackUri) {
         CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest();
         createPaymentRequest.action = "SALE";
         createPaymentRequest.pos_id = this.posId;
@@ -155,7 +409,7 @@ public class MCashClient {
         createPaymentRequest.additional_edit = false;
         createPaymentRequest.expires_in = 300;
         createPaymentRequest.ledger = this.ledger;
-        if(callbackUri != null){
+        if (callbackUri != null) {
             createPaymentRequest.callback_uri = callbackUri;
         }
         if (additionalAmount > 0) {
@@ -165,8 +419,8 @@ public class MCashClient {
         }
         MCashUrl url = MCashUrl.PaymentRequest();
         try {
-            HttpRequest request = requestFactory.buildPostRequest(url, BuildJsonContent(createPaymentRequest));
-            HttpResponse response = Request(request);
+            HttpRequest request = requestFactory.buildPostRequest(url, buildJsonContent(createPaymentRequest));
+            HttpResponse response = doHttpRequest(request);
             ResourceId resourceId = response.parseAs(ResourceId.class);
             return resourceId;
         } catch (IOException ex) {
@@ -174,54 +428,54 @@ public class MCashClient {
         }
         return null;
     }
-    
-    private void DoPaymentRequestAction(String ticketId, String action, String callbackUri){
+
+    private void doPaymentRequestAction(String ticketId, String action, String callbackUri) {
         UpdatePaymentRequest updatePaymentRequest = new UpdatePaymentRequest();
         updatePaymentRequest.action = action;
         updatePaymentRequest.ledger = this.ledger;
         updatePaymentRequest.callback_uri = callbackUri;
         MCashUrl url = MCashUrl.PaymentRequest(ticketId);
         try {
-            HttpRequest request = requestFactory.buildPutRequest(url, BuildJsonContent(updatePaymentRequest));
-            Request(request);
+            HttpRequest request = requestFactory.buildPutRequest(url, buildJsonContent(updatePaymentRequest));
+            doHttpRequest(request);
         } catch (IOException ex) {
             Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
     }
-    
+
     /**
      *
      * @param ticketId
      * @param callbackUri
      */
-    public void AbortPaymentRequest(String ticketId, String callbackUri){
-        DoPaymentRequestAction(ticketId, "abort", callbackUri);
+    public void abortPaymentRequest(String ticketId, String callbackUri) {
+        doPaymentRequestAction(ticketId, "abort", callbackUri);
     }
-    
+
     /**
      *
      * @param ticketId
      * @param callbackUri
      */
-    public void CapturePaymentRequest(String ticketId, String callbackUri){
-        DoPaymentRequestAction(ticketId, "capture", callbackUri);
+    public void capturePaymentRequest(String ticketId, String callbackUri) {
+        doPaymentRequestAction(ticketId, "capture", callbackUri);
     }
-    
+
     /**
      *
      * @param serialNumber
      * @param callbackUri
      * @return
      */
-    public Shortlink CreateShortlink(String serialNumber, String callbackUri){
+    public Shortlink createShortlink(String serialNumber, String callbackUri) {
         Shortlink shortlink = new Shortlink();
         shortlink.callback_uri = callbackUri;
         shortlink.serial_number = serialNumber;
         MCashUrl url = MCashUrl.Shortlink();
         try {
-            HttpRequest request = requestFactory.buildPostRequest(url, BuildJsonContent(shortlink));
-            HttpResponse response = Request(request);
+            HttpRequest request = requestFactory.buildPostRequest(url, buildJsonContent(shortlink));
+            HttpResponse response = doHttpRequest(request);
             shortlink = response.parseAs(Shortlink.class);
             return shortlink;
         } catch (IOException ex) {
@@ -229,26 +483,26 @@ public class MCashClient {
         }
         return null;
     }
-    
+
     /**
      *
      * @param ticketId
      * @return
      */
-    public PaymentRequestOutcome GetPaymentRequestOutcome(String ticketId){
+    public PaymentRequestOutcome getPaymentRequestOutcome(String ticketId) {
         MCashUrl url = MCashUrl.PaymentRequestOutcome(ticketId);
         try {
             HttpRequest request = requestFactory.buildGetRequest(url);
-            HttpResponse response = Request(request);
+            HttpResponse response = doHttpRequest(request);
             PaymentRequestOutcome outcome = response.parseAs(PaymentRequestOutcome.class);
             return outcome;
         } catch (IOException ex) {
             Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return null;        
+        return null;
     }
 
-    private HttpResponse Request(HttpRequest request) throws IOException, HttpResponseException {
+    private HttpResponse doHttpRequest(HttpRequest request) throws IOException, HttpResponseException {
         HttpResponse response;
         int tries = 0;
         do {
@@ -261,16 +515,16 @@ public class MCashClient {
             return response;
         }
     }
-    
+
     /**
      *
      * @return
      */
-    public LedgerOverview GetLedgerOverview(){
+    public LedgerOverview getLedgerOverview() {
         MCashUrl url = MCashUrl.Ledger();
         try {
             HttpRequest request = requestFactory.buildGetRequest(url);
-            HttpResponse response = Request(request);
+            HttpResponse response = doHttpRequest(request);
             LedgerOverview ledgerOverview = response.parseAs(LedgerOverview.class);
             return ledgerOverview;
         } catch (IOException ex) {
@@ -278,17 +532,17 @@ public class MCashClient {
         }
         return null;
     }
-    
+
     /**
      *
      * @param ledger
      * @return
      */
-    public LedgerDetail GetLedgerDetail(String ledger){
+    public LedgerDetail getLedgerDetail(String ledger) {
         MCashUrl url = MCashUrl.LedgerDetail(ledger);
         try {
             HttpRequest request = requestFactory.buildGetRequest(url);
-            HttpResponse response = Request(request);
+            HttpResponse response = doHttpRequest(request);
             LedgerDetail ledgerDetail = response.parseAs(LedgerDetail.class);
             return ledgerDetail;
         } catch (IOException ex) {
@@ -296,26 +550,27 @@ public class MCashClient {
         }
         return null;
     }
-    
+
     /**
      * Uses ledger specified in constructor
+     *
      * @return
      */
-    public LedgerDetail GetLedgerDetail(){
-        return GetLedgerDetail(ledger);
+    public LedgerDetail getLedgerDetail() {
+        return getLedgerDetail(ledger);
     }
-    
+
     /**
      *
      * @param ledger
      * @param reportId
      * @return
      */
-    public ReportInfo GetReportInfo(String ledger, String reportId){
+    public ReportInfo getReportInfo(String ledger, String reportId) {
         MCashUrl url = MCashUrl.Report(ledger, reportId);
         try {
             HttpRequest request = requestFactory.buildGetRequest(url);
-            HttpResponse response = Request(request);
+            HttpResponse response = doHttpRequest(request);
             ReportInfo reportInfo = response.parseAs(ReportInfo.class);
             return reportInfo;
         } catch (IOException ex) {
@@ -323,44 +578,74 @@ public class MCashClient {
         }
         return null;
     }
-    
+
     /**
      * Uses ledger specified in constructor
+     *
      * @param reportId
      * @return
      */
-    public ReportInfo GetReportInfo(String reportId){
-        return GetReportInfo(ledger, reportId);
+    public ReportInfo getReportInfo(String reportId) {
+        return getReportInfo(ledger, reportId);
     }
-    
+
+    /**
+     *
+     * @param uri
+     * @return
+     */
+    public ReportInfo getReportInfoFromOpenUri(String uri) {
+        GenericUrl url = new GenericUrl(uri);
+        try {
+            HttpRequest request = requestFactory.buildGetRequest(url);
+            HttpResponse response = doHttpRequest(request);
+            ReportInfo reportInfo = response.parseAs(ReportInfo.class);
+            return reportInfo;
+        } catch (IOException ex) {
+            Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+
     /**
      *
      * @param ledger
      * @param reportId
      */
-    public void CloseReport(String ledger, String reportId){
+    public void closeReport(String ledger, String reportId) {
         MCashUrl url = MCashUrl.Report(ledger, reportId);
         try {
             HttpRequest request = requestFactory.buildPutRequest(url, null);
-            Request(request);
+            doHttpRequest(request);
         } catch (IOException ex) {
             Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     /**
      * Uses ledger specified in constructor
+     *
      * @param reportId
      */
-    public void CloseReport(String reportId){
-        CloseReport(ledger, reportId);
+    public void closeReport(String reportId) {
+        closeReport(ledger, reportId);
     }
 
-    private JsonHttpContent BuildJsonContent(Object object) {
+    public void closeReportFromOpenUri(String uri) {
+        GenericUrl url = new GenericUrl(uri);
+        try {
+            HttpRequest request = requestFactory.buildPutRequest(url, null);
+            doHttpRequest(request);
+        } catch (IOException ex) {
+            Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private JsonHttpContent buildJsonContent(Object object) {
         return new JsonHttpContent(JSON_FACTORY, object);
     }
 
-    private HttpHeaders MakeHeaders(String merchantId, String userId, String authKey, String authMethod, String testbedToken) {
+    private HttpHeaders createHeaders(String merchantId, String userId, String authKey, String authMethod, String testbedToken) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Mcash-Merchant", merchantId);
         headers.set("X-Mcash-User", userId);

@@ -23,15 +23,58 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
+import java.util.Date;
+import java.util.List;
 
 /**
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class ResourceId {
+public class PaymentRequestOutcome {
+
     @Key
-    public String id;
+    public String currency;
+    @Key
+    public String amount;
+    @Key
+    public String additional_amount;
+    @Key
+    public String auth_amount;
+    @Key
+    public String auth_additional_amount;
+    @Key
+    public List<Capture> captures;
+    @Key
+    public String status;
+    @Key
+    public String status_code;
+    @Key
+    public String customer;
+    @Key
+    public Date date_modified;
+    @Key
+    public Date date_expires;
+    @Key
+    public String credit;
+    @Key
+    public String interchange_fee;
+    @Key
+    public String transaction_fee;
+    @Key
+    public String report_id;
+    @Key
+    public String report_uri;
+    @Key
+    public String ledger;
+    @Key
+    public String attachment_uri;
+    @Key
+    public String pos_id;
+    @Key
+    public String pos_tid;
+    @Key
+    public String tid;
 }

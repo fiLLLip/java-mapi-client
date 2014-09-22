@@ -23,24 +23,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
+import java.util.List;
 
 /**
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class LedgerDetail {
+public class SettlementSummary {
 
     @Key
-    public String open_report_uri;
+    public String gross;
+    @Key
+    public String transaction_fee;
+    @Key
+    public String scope_fee;
+    @Key
+    public List<Fee> fees;
+    @Key
+    public String interchange;
     @Key
     public String currency;
     @Key
-    public String last_closed_report_uri;
+    public String net;
     @Key
-    public String id;
+    public String taxcode;
     @Key
-    public String description;
+    public String settlement_fee;
 }

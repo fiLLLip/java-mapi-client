@@ -23,7 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
 
@@ -31,20 +31,16 @@ import com.google.api.client.util.Key;
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class Merchant {
+public class LedgerDetail {
 
+    @Key
+    public String open_report_uri;
+    @Key
+    public String currency;
+    @Key
+    public String last_closed_report_uri;
     @Key
     public String id;
     @Key
-    public String jurisdiction;
-    @Key
-    public String organization_id;
-    @Key
-    public String business_name;
-    @Key
-    public String mcc;
-    @Key
-    public String netmask;
-    @Key
-    public Location location;
+    public String description;
 }
