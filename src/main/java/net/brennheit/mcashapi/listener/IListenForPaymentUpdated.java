@@ -1,5 +1,5 @@
-/* 
- * Copyright (c) 2014, fiLLLip <filip at tomren.it>
+/*
+ * Copyright (c) 2014, fiLLLip <filip@tomren.it>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,18 +23,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
 
-import com.google.api.client.util.Key;
+package net.brennheit.mcashapi.listener;
+
+import net.brennheit.mcashapi.resource.PaymentRequestOutcome;
 
 /**
  *
- * @author fiLLLip <filip at tomren.it>
+ * @author fiLLLip <filip@tomren.it>
  */
-public class Fee {
-
-    @Key
-    public String type;
-    @Key
-    public String amount;
+public interface IListenForPaymentUpdated {
+    public void paymentFinished(PaymentRequestOutcome paymentRequestOutcome);
 }

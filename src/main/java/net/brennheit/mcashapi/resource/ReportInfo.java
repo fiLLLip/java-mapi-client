@@ -23,21 +23,50 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
+import java.util.Date;
 import java.util.List;
 
 /**
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class LedgerOverview {
+public class ReportInfo {
 
     @Key
-    public String prev;
+    public List<String> transaction_log_uris;
     @Key
-    public List<String> uris;
+    public List<String> scope_log_uris;
     @Key
-    public String next;
+    public String previous_report_uri;
+    @Key
+    public String settlement_uri;
+    @Key
+    public String status;
+    @Key
+    public Date time_closed;
+    @Key
+    public ReportSummary report_summary;
+    @Key
+    public String callback_uri;
+    @Key
+    public int payment_request_count;
+    @Key
+    public int payment_auth_count;
+    @Key
+    public int payment_capture_count;
+    @Key
+    public int payment_expire_count;
+    @Key
+    public int payment_fail_count;
+    @Key
+    public int payment_abort_count;
+    @Key
+    public int permission_request_count;
+    @Key
+    public int permission_answered_count;
+    @Key
+    public int permission_fail_count;
 }

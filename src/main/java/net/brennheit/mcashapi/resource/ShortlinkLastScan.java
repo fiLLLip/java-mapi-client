@@ -23,29 +23,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
-import java.util.List;
 
 /**
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class ReportSummary {
+public class ShortlinkLastScan {
 
     @Key
-    public String gross;
+    public String id;
+    
     @Key
-    public String transaction_fee;
-    @Key
-    public String scope_fee;
-    @Key
-    public List<Fee> fees;
-    @Key
-    public String interchange;
-    @Key
-    public String currency;
-    @Key
-    public String net;
+    public String argstring;
 }

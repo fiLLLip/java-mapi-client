@@ -23,33 +23,43 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
-import java.util.List;
 
 /**
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class SettlementSummary {
+public class CreatePaymentRequest {
 
     @Key
-    public String gross;
+    public String ledger;
     @Key
-    public String transaction_fee;
+    public String callback_uri;
     @Key
-    public String scope_fee;
+    public String display_message_uri;
     @Key
-    public List<Fee> fees;
-    @Key
-    public String interchange;
+    public String customer;
     @Key
     public String currency;
     @Key
-    public String net;
+    public String amount;
     @Key
-    public String taxcode;
+    public String additional_amount;
     @Key
-    public String settlement_fee;
+    public boolean additional_edit;
+    @Key
+    public boolean allow_credit;
+    @Key
+    public String pos_id;
+    @Key
+    public String pos_tid;
+    @Key
+    public String text;
+    @Key
+    public String action;
+    @Key
+    public int expires_in;
+
 }

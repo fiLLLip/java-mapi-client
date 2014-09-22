@@ -23,7 +23,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
 
@@ -31,22 +31,10 @@ import com.google.api.client.util.Key;
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class PayoutDetail {
+public class Fee {
 
     @Key
-    public String currency;
+    public String type;
     @Key
-    public String unsettled_fees_before;
-    @Key
-    public String unsettled_fees_after;
-    @Key
-    public String payout;
-    @Key
-    public String net;
-    @Key
-    public String gross;
-    @Key
-    public String billed;
-    @Key
-    public String invoice_id;
+    public String amount;
 }

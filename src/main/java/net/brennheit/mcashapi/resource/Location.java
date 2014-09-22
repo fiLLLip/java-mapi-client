@@ -23,11 +23,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package net.brennheit.mcashapi.types;
+package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
 
-public class CallbackUri {
+/**
+ *
+ * @author fiLLLip <filip at tomren.it>
+ */
+public class Location {
+
     @Key
-    public String callback_uri;
+    public float latitude;
+    @Key
+    public float longitude;
+    @Key
+    public float accuracy;
 }
