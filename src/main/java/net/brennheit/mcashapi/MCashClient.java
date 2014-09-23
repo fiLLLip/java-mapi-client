@@ -510,7 +510,7 @@ public class MCashClient implements AutoCloseable{
      * @param callbackUri
      * @return
      */
-    public Shortlink createShortlink(String serialNumber, String callbackUri) {
+    public ResourceId createShortlink(String serialNumber, String callbackUri) {
         Shortlink shortlink = new Shortlink();
         shortlink.callback_uri = callbackUri;
         shortlink.serial_number = serialNumber;
@@ -518,8 +518,8 @@ public class MCashClient implements AutoCloseable{
         try {
             HttpRequest request = requestFactory.buildPostRequest(url, buildJsonContent(shortlink));
             HttpResponse response = doHttpRequest(request);
-            shortlink = response.parseAs(Shortlink.class);
-            return shortlink;
+            ResourceId resourceId = response.parseAs(ResourceId.class);
+            return resourceId;
         } catch (IOException ex) {
             Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
         }
