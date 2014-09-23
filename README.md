@@ -13,5 +13,4 @@ Tested cases known to work
 
 Sample implementation
 ---------------------
-See sample implementation in the following commit
-https://github.com/ZarGate/OpenbravoPOS/commit/bfd32a718b5490154770ee85fad6747a6c33f3d6#diff-15
+See sample implementation in a forked and customized [OpenbravoPOS 2.30.2](https://github.com/ZarGate/OpenbravoPOS/commit/bfd32a718b5490154770ee85fad6747a6c33f3d6#diff-15)
