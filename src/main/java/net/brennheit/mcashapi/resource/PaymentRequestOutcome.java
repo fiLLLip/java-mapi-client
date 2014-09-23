@@ -26,7 +26,6 @@
 package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -50,15 +49,23 @@ public class PaymentRequestOutcome {
     @Key
     public String status;
     @Key
-    public String status_code;
+    public int status_code;
     @Key
     public String customer;
     @Key
-    public Date date_modified;
+    public String date_modified;
+
+    public DateTime getDate_modified() {
+        return new DateTime(date_modified);
+    }
+
+    public DateTime getDate_expires() {
+        return new DateTime(date_expires);
+    }
     @Key
-    public Date date_expires;
+    public String date_expires;
     @Key
-    public String credit;
+    public boolean credit;
     @Key
     public String interchange_fee;
     @Key

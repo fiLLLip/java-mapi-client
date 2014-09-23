@@ -101,7 +101,8 @@ public class MCashClient {
             @Override
             public void initialize(HttpRequest request) throws IOException {
                 request.setHeaders(httpHeaders);
-                request.setParser(new JsonObjectParser(JSON_FACTORY));
+                JsonObjectParser jsonObjectParser = new JsonObjectParser(JSON_FACTORY);
+                request.setParser(jsonObjectParser);
             }
         });
     }
