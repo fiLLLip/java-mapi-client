@@ -101,7 +101,8 @@ public class MCashClient {
             @Override
             public void initialize(HttpRequest request) throws IOException {
                 request.setHeaders(httpHeaders);
-                request.setParser(new JsonObjectParser(JSON_FACTORY));
+                JsonObjectParser jsonObjectParser = new JsonObjectParser(JSON_FACTORY);
+                request.setParser(jsonObjectParser);
             }
         });
     }
@@ -142,6 +143,7 @@ public class MCashClient {
             return;
         }
         PaymentRequestOutcome requestOutcome = getPaymentRequestOutcome(this.globalTicketId);
+        if(requestOutcome == null) return;
         switch (requestOutcome.status.toLowerCase()) {
             case "pending":
                 // Awaiting approvement by customer
@@ -220,9 +222,9 @@ public class MCashClient {
         if (this.shortlinkId == null || this.shortlinkStartListeningTime == null) {
             return;
         }
-        long ttl = (new Date()).getTime() - this.shortlinkStartListeningTime.getTime();
+        long ttl = ((new Date()).getTime() - this.shortlinkStartListeningTime.getTime()) / 1000;
         ShortlinkLastScan shortlinkLastScan = getShortLinkLastScan(this.shortlinkId, ttl);
-        if (shortlinkLastScan.id != null) {
+        if (shortlinkLastScan != null && shortlinkLastScan.id != null) {
             fireShortlinkScannedEvent(shortlinkLastScan);
             this.shortlinkId = null;
             this.shortlinkStartListeningTime = null;
@@ -284,6 +286,9 @@ public class MCashClient {
 
     private void closeOpenReport() throws Exception {
         LedgerOverview ledgerOverview = getLedgerOverview();
+        if (ledgerOverview == null) {
+            throw new Exception("Could not find ledger overview.");
+        }
         String ledgerUri = null;
         for (String uri : ledgerOverview.uris) {
             if (uri.contains(this.ledger)) {
@@ -296,13 +301,13 @@ public class MCashClient {
         }
         LedgerDetail ledgerDetail = getLedgerDetail();
         ReportInfo reportInfo = getReportInfoFromOpenUri(ledgerDetail.open_report_uri);
-        if (!reportInfo.status.equals("open")) {
+        if (reportInfo == null || !reportInfo.status.equals("open")) {
             throw new Exception("Already closed or closing report.");
         }
         closeReportFromOpenUri(ledgerDetail.open_report_uri);
         this.openReportUri = ledgerDetail.open_report_uri;
         reportInfo = getReportInfoFromOpenUri(this.openReportUri);
-        if (!reportInfo.status.equals("closing") && !reportInfo.status.equals("closed")) {
+        if (reportInfo == null || (!reportInfo.status.equals("closing") && !reportInfo.status.equals("closed"))) {
             throw new Exception("Close report failed.");
         }
         checkReportClosedWithTimer();
@@ -313,7 +318,7 @@ public class MCashClient {
             return;
         }
         ReportInfo reportInfo = getReportInfoFromOpenUri(this.openReportUri);
-        if (reportInfo.status.equals("closed")) {
+        if (reportInfo != null && reportInfo.status.equals("closed")) {
             fireReportClosedEvent(reportInfo);
             this.openReportUri = null;
         }

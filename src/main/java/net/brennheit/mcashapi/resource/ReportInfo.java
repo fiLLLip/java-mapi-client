@@ -26,7 +26,6 @@
 package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -46,7 +45,11 @@ public class ReportInfo {
     @Key
     public String status;
     @Key
-    public Date time_closed;
+    public String time_closed;
+
+    public DateTime getTime_closed() {
+        return new DateTime(time_closed);
+    }
     @Key
     public ReportSummary report_summary;
     @Key
