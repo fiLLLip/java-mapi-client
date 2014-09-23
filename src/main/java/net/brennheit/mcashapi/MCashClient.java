@@ -61,7 +61,7 @@ import net.brennheit.mcashapi.listener.IListenForShortlinkScan;
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class MCashClient {
+public class MCashClient implements AutoCloseable{
 
     private HttpHeaders httpHeaders;
     private HttpRequestFactory requestFactory;
@@ -105,6 +105,43 @@ public class MCashClient {
                 request.setParser(jsonObjectParser);
             }
         });
+    }
+    
+
+    @Override
+    public void close() {
+        removeAllEventListeners();
+        cancelAllTimers();
+    }
+    
+    private void removeAllEventListeners(){
+        if (this.paymentFinishedListeners != null) {
+            this.paymentFinishedListeners.removeAllElements();
+        }
+        if (this.shortlinkScannedListeners != null) {
+            this.shortlinkScannedListeners.removeAllElements();
+        }
+        if (this.reportClosedListeners != null) {
+            this.reportClosedListeners.removeAllElements();
+        }
+    }
+    
+    private void cancelAllTimers(){
+        if (paymentFinishedTimer != null) {
+            paymentFinishedTimer.cancel();
+            paymentFinishedTimer.purge();
+            paymentFinishedTimer = null;
+        }
+        if (shortlinkScannedTimer != null) {
+            shortlinkScannedTimer.cancel();
+            shortlinkScannedTimer.purge();
+            shortlinkScannedTimer = null;
+        }
+        if (reportClosedTimer != null) {
+            reportClosedTimer.cancel();
+            reportClosedTimer.purge();
+            reportClosedTimer = null;
+        }
     }
 
     /**
