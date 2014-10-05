@@ -439,7 +439,7 @@ public class MCashClient implements AutoCloseable{
      * @param callbackUri
      * @return
      */
-    public ResourceId createPaymentRequest(String posTicketId, String scanToken, double amount, String currency, double additionalAmount, boolean additionalAmountEdit, String callbackUri) {
+    public ResourceId createPaymentRequest(String posTicketId, String scanToken, double amount, String currency, double additionalAmount, boolean additionalAmountEdit, String callbackUri, boolean allowCredit) {
         CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest();
         createPaymentRequest.action = "SALE";
         createPaymentRequest.pos_id = this.posId;
@@ -451,6 +451,7 @@ public class MCashClient implements AutoCloseable{
         createPaymentRequest.additional_edit = false;
         createPaymentRequest.expires_in = 300;
         createPaymentRequest.ledger = this.ledger;
+        createPaymentRequest.allow_credit = allowCredit;
         if (callbackUri != null) {
             createPaymentRequest.callback_uri = callbackUri;
         }
