@@ -61,6 +61,11 @@ public class MCashUrl extends GenericUrl {
         return new MCashUrl(url);
     }
 
+    public static MCashUrl PaymentRequestTicket(String tid) {
+        String url = String.format("/payment_request/%s/ticket/", tid);
+        return new MCashUrl(url);
+    }
+
     public static MCashUrl Shortlink() {
         return new MCashUrl("/shortlink/");
     }
@@ -93,5 +98,4 @@ public class MCashUrl extends GenericUrl {
         String url = String.format("/ledger/%s/report/%s/", ledger, reportId);
         return new MCashUrl(url);
     }
-
 }

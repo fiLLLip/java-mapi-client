@@ -45,8 +45,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -61,7 +63,7 @@ import net.brennheit.mcashapi.listener.IListenForShortlinkScan;
  *
  * @author fiLLLip <filip at tomren.it>
  */
-public class MCashClient implements AutoCloseable{
+public class MCashClient implements AutoCloseable {
 
     private HttpHeaders httpHeaders;
     private HttpRequestFactory requestFactory;
@@ -106,15 +108,14 @@ public class MCashClient implements AutoCloseable{
             }
         });
     }
-    
 
     @Override
     public void close() {
         removeAllEventListeners();
         cancelAllTimers();
     }
-    
-    private void removeAllEventListeners(){
+
+    private void removeAllEventListeners() {
         if (this.paymentFinishedListeners != null) {
             this.paymentFinishedListeners.removeAllElements();
         }
@@ -125,8 +126,8 @@ public class MCashClient implements AutoCloseable{
             this.reportClosedListeners.removeAllElements();
         }
     }
-    
-    private void cancelAllTimers(){
+
+    private void cancelAllTimers() {
         if (paymentFinishedTimer != null) {
             paymentFinishedTimer.cancel();
             paymentFinishedTimer.purge();
@@ -145,7 +146,9 @@ public class MCashClient implements AutoCloseable{
     }
 
     /**
-     * Add listener to listen for payment to finish. Finish is either status "ok" or "fail".
+     * Add listener to listen for payment to finish. Finish is either status
+     * "ok" or "fail".
+     *
      * @param listener
      */
     public void addPaymentFinishedEventListener(IListenForPaymentUpdated listener) {
@@ -156,6 +159,7 @@ public class MCashClient implements AutoCloseable{
     }
 
     protected void firePaymentFinishedEvent(PaymentRequestOutcome requestOutcome) {
+        this.globalTicketId = null;
         if (this.paymentFinishedListeners != null && !this.paymentFinishedListeners.isEmpty()) {
             Enumeration e = this.paymentFinishedListeners.elements();
             while (e.hasMoreElements()) {
@@ -168,7 +172,8 @@ public class MCashClient implements AutoCloseable{
 
     /**
      * Start poller on payment result.
-     * @param ticketId 
+     *
+     * @param ticketId
      */
     public void startPaymentFinishedListener(String ticketId) {
         this.globalTicketId = ticketId;
@@ -180,22 +185,23 @@ public class MCashClient implements AutoCloseable{
             return;
         }
         PaymentRequestOutcome requestOutcome = getPaymentRequestOutcome(this.globalTicketId);
-        if(requestOutcome == null) return;
+        if (requestOutcome == null) {
+            return;
+        }
         switch (requestOutcome.status.toLowerCase()) {
             case "pending":
                 // Awaiting approvement by customer
                 break;
             case "auth":
                 // Approved by customer, run capture
-                capturePaymentRequest(this.globalTicketId, null);
+                capturePaymentRequest(requestOutcome.tid, null);
+                firePaymentFinishedEvent(requestOutcome);
                 break;
             case "ok":
                 firePaymentFinishedEvent(requestOutcome);
-                this.globalTicketId = null;
                 return;
             case "fail":
                 firePaymentFinishedEvent(requestOutcome);
-                this.globalTicketId = null;
                 return;
         }
     }
@@ -224,7 +230,8 @@ public class MCashClient implements AutoCloseable{
 
     /**
      * Add listener to listen for shortlink to be scanned.
-     * @param listener 
+     *
+     * @param listener
      */
     public void addShortlinkScannedEventListener(IListenForShortlinkScan listener) {
         if (this.shortlinkScannedListeners == null) {
@@ -246,6 +253,7 @@ public class MCashClient implements AutoCloseable{
 
     /**
      * Start poller on shortlink scan.
+     *
      * @param shortlinkId ID of shortlink
      * @param startListeningTime Time of earliest possible scan
      */
@@ -292,7 +300,8 @@ public class MCashClient implements AutoCloseable{
 
     /**
      * Add listener to report to be closed.
-     * @param listener 
+     *
+     * @param listener
      */
     public void addReportClosedEventListener(IListenForReportClosed listener) {
         if (this.reportClosedListeners == null) {
@@ -315,7 +324,8 @@ public class MCashClient implements AutoCloseable{
     /**
      * Start closing report and polling for result. May take a while before
      * event fires due to latency on report closing.
-     * @throws Exception 
+     *
+     * @throws Exception
      */
     public void startReportClosedListener() throws Exception {
         closeOpenReport();
@@ -437,9 +447,11 @@ public class MCashClient implements AutoCloseable{
      * @param additionalAmount
      * @param additionalAmountEdit
      * @param callbackUri
+     * @param allowCredit
+     * @param text
      * @return
      */
-    public ResourceId createPaymentRequest(String posTicketId, String scanToken, double amount, String currency, double additionalAmount, boolean additionalAmountEdit, String callbackUri, boolean allowCredit) {
+    public ResourceId createPaymentRequest(String posTicketId, String scanToken, double amount, String currency, double additionalAmount, boolean additionalAmountEdit, String callbackUri, boolean allowCredit, String text) {
         CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest();
         createPaymentRequest.action = "SALE";
         createPaymentRequest.pos_id = this.posId;
@@ -452,6 +464,7 @@ public class MCashClient implements AutoCloseable{
         createPaymentRequest.expires_in = 300;
         createPaymentRequest.ledger = this.ledger;
         createPaymentRequest.allow_credit = allowCredit;
+        createPaymentRequest.text = text;
         if (callbackUri != null) {
             createPaymentRequest.callback_uri = callbackUri;
         }
@@ -503,6 +516,24 @@ public class MCashClient implements AutoCloseable{
      */
     public void capturePaymentRequest(String ticketId, String callbackUri) {
         doPaymentRequestAction(ticketId, "capture", callbackUri);
+    }
+    
+    public void putTicket(String ticketId, Ticket ticket){
+        List<Ticket> tickets = new ArrayList<>();
+        tickets.add(ticket);
+        putTickets(ticketId, tickets);
+    }
+    
+    public void putTickets(String ticketId, List<Ticket> tickets){
+        Tickets ticketRequest = new Tickets();
+        ticketRequest.tickets = tickets;
+        MCashUrl url = MCashUrl.PaymentRequestTicket(ticketId);
+        try {
+            HttpRequest request = requestFactory.buildPutRequest(url, buildJsonContent(ticketRequest));
+            doHttpRequest(request);
+        } catch (IOException ex) {
+            Logger.getLogger(MCashClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
