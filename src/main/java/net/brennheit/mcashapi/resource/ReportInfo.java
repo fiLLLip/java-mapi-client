@@ -50,6 +50,11 @@ public class ReportInfo {
     public DateTime getTime_closed() {
         return new DateTime(time_closed);
     }
+    
+    public void setTime_closed(DateTime dateTime) {
+        time_closed = dateTime.toStringMCashDateTime();
+    }
+    
     @Key
     public ReportSummary report_summary;
     @Key

@@ -58,10 +58,19 @@ public class PaymentRequestOutcome {
     public DateTime getDate_modified() {
         return new DateTime(date_modified);
     }
+    
+    public void setDate_modified(DateTime dateTime) {
+        date_modified = dateTime.toStringMCashDateTime();
+    }
 
     public DateTime getDate_expires() {
         return new DateTime(date_expires);
     }
+
+    public void setDate_expires(DateTime dateTime) {
+        date_expires = dateTime.toStringMCashDateTime();
+    }
+    
     @Key
     public String date_expires;
     @Key
