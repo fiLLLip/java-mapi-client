@@ -6,9 +6,10 @@ Library for JAVA to interact with mCASH REST API
 Tested cases known to work
 --------------------------
 * Create shortlink
-* Create payment
+* Create payment (with text)
 * Capture payment
 * Cancel payment
+* Send ticket to payment
 * Get latest shortlink scan with ttl
 
 Sample implementation
