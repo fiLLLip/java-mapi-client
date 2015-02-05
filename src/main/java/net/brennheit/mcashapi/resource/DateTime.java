@@ -49,7 +49,7 @@ public final class DateTime implements Serializable {
      */
     private static final Pattern MCASH_DATETIME_PATTERN = Pattern.compile(
             "^(\\d{4})-(\\d{2})-(\\d{2})" // yyyy-MM-dd
-            + "( (\\d{2}):(\\d{2}):(\\d{2})?"); // 'T'HH:mm:ss.milliseconds
+            + "( (\\d{2}):(\\d{2}):(\\d{2}))?"); // 'T'HH:mm:ss.milliseconds
 
     /**
      * Date/time value expressed as the number of ms since the Unix epoch.

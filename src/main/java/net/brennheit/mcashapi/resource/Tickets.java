@@ -1,5 +1,5 @@
-/* 
- * Copyright (c) 2014, fiLLLip <filip at tomren.it>
+/*
+ * Copyright (c) 2015, fiLLLip <filip@tomren.it>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,51 +30,10 @@ import java.util.List;
 
 /**
  *
- * @author fiLLLip <filip at tomren.it>
+ * @author fiLLLip <filip@tomren.it>
  */
-public class ReportInfo {
+public class Tickets {
 
     @Key
-    public List<String> transaction_log_uris;
-    @Key
-    public List<String> scope_log_uris;
-    @Key
-    public String previous_report_uri;
-    @Key
-    public String settlement_uri;
-    @Key
-    public String status;
-    @Key
-    public String time_closed;
-
-    public DateTime getTime_closed() {
-        return new DateTime(time_closed);
-    }
-    
-    public void setTime_closed(DateTime dateTime) {
-        time_closed = dateTime.toStringMCashDateTime();
-    }
-    
-    @Key
-    public ReportSummary report_summary;
-    @Key
-    public String callback_uri;
-    @Key
-    public int payment_request_count;
-    @Key
-    public int payment_auth_count;
-    @Key
-    public int payment_capture_count;
-    @Key
-    public int payment_expire_count;
-    @Key
-    public int payment_fail_count;
-    @Key
-    public int payment_abort_count;
-    @Key
-    public int permission_request_count;
-    @Key
-    public int permission_answered_count;
-    @Key
-    public int permission_fail_count;
+    public List<Ticket> tickets;
 }
