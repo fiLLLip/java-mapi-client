@@ -1,4 +1,4 @@
-mcash-java-api
+java-mapi-client
 ==============
 
 Library for JAVA to interact with mCASH REST API
