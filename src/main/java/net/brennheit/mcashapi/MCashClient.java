@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2014, fiLLLip <filip at tomren.it>
+ * Copyright (c) 2014, fiLLLip
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@ import net.brennheit.mcashapi.listener.IListenForShortlinkScan;
 
 /**
  *
- * @author fiLLLip <filip at tomren.it>
+ * @author fiLLLip
  */
 public class MCashClient implements AutoCloseable {
 

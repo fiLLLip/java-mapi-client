@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, fiLLLip <filip@tomren.it>
+ * Copyright (c) 2014, fiLLLip
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@ import net.brennheit.mcashapi.resource.PaymentRequestOutcome;
 
 /**
  *
- * @author fiLLLip <filip@tomren.it>
+ * @author fiLLLip
  */
 public interface IListenForPaymentUpdated {
     public void paymentFinished(PaymentRequestOutcome paymentRequestOutcome);

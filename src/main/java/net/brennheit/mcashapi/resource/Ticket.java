@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, fiLLLip <filip@tomren.it>
+ * Copyright (c) 2015, fiLLLip
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@ import com.google.api.client.util.Key;
 
 /**
  *
- * @author fiLLLip <filip@tomren.it>
+ * @author fiLLLip
  */
 public class Ticket {
 
