@@ -449,9 +449,10 @@ public class MCashClient implements AutoCloseable {
      * @param callbackUri
      * @param allowCredit
      * @param text
+     * @param links
      * @return
      */
-    public ResourceId createPaymentRequest(String posTicketId, String scanToken, double amount, String currency, double additionalAmount, boolean additionalAmountEdit, String callbackUri, boolean allowCredit, String text) {
+    public ResourceId createPaymentRequest(String posTicketId, String scanToken, double amount, String currency, double additionalAmount, boolean additionalAmountEdit, String callbackUri, boolean allowCredit, String text, List<PaymentRequestLink> links) {
         CreatePaymentRequest createPaymentRequest = new CreatePaymentRequest();
         createPaymentRequest.action = "SALE";
         createPaymentRequest.pos_id = this.posId;
@@ -465,6 +466,7 @@ public class MCashClient implements AutoCloseable {
         createPaymentRequest.ledger = this.ledger;
         createPaymentRequest.allow_credit = allowCredit;
         createPaymentRequest.text = text;
+        createPaymentRequest.links = links;
         if (callbackUri != null) {
             createPaymentRequest.callback_uri = callbackUri;
         }
@@ -517,14 +519,14 @@ public class MCashClient implements AutoCloseable {
     public void capturePaymentRequest(String ticketId, String callbackUri) {
         doPaymentRequestAction(ticketId, "capture", callbackUri);
     }
-    
-    public void putTicket(String ticketId, Ticket ticket){
+
+    public void putTicket(String ticketId, Ticket ticket) {
         List<Ticket> tickets = new ArrayList<>();
         tickets.add(ticket);
         putTickets(ticketId, tickets);
     }
-    
-    public void putTickets(String ticketId, List<Ticket> tickets){
+
+    public void putTickets(String ticketId, List<Ticket> tickets) {
         Tickets ticketRequest = new Tickets();
         ticketRequest.tickets = tickets;
         MCashUrl url = MCashUrl.PaymentRequestTicket(ticketId);
