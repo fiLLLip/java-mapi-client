@@ -26,6 +26,7 @@
 package net.brennheit.mcashapi.resource;
 
 import com.google.api.client.util.Key;
+import java.util.List;
 
 /**
  *
@@ -39,4 +40,6 @@ public class UpdatePaymentRequest {
     public String callback_uri;
     @Key
     public String action;
+    @Key
+    public List<PaymentRequestLink> links;
 }

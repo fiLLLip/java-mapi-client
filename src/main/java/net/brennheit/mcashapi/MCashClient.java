@@ -487,11 +487,16 @@ public class MCashClient implements AutoCloseable {
         return null;
     }
 
-    private void doPaymentRequestAction(String ticketId, String action, String callbackUri) {
+    public void updatePaymentRequestLinks(String ticketId, List<PaymentRequestLink> links, String callbackUri) {
+        doPaymentRequestAction(ticketId, null, links, callbackUri);
+    }
+
+    private void doPaymentRequestAction(String ticketId, String action, List<PaymentRequestLink> links, String callbackUri) {
         UpdatePaymentRequest updatePaymentRequest = new UpdatePaymentRequest();
         updatePaymentRequest.action = action;
         updatePaymentRequest.ledger = this.ledger;
         updatePaymentRequest.callback_uri = callbackUri;
+        updatePaymentRequest.links = links;
         MCashUrl url = MCashUrl.PaymentRequest(ticketId);
         try {
             HttpRequest request = requestFactory.buildPutRequest(url, buildJsonContent(updatePaymentRequest));
@@ -508,7 +513,7 @@ public class MCashClient implements AutoCloseable {
      * @param callbackUri
      */
     public void abortPaymentRequest(String ticketId, String callbackUri) {
-        doPaymentRequestAction(ticketId, "abort", callbackUri);
+        doPaymentRequestAction(ticketId, "abort", null, callbackUri);
     }
 
     /**
@@ -517,15 +522,17 @@ public class MCashClient implements AutoCloseable {
      * @param callbackUri
      */
     public void capturePaymentRequest(String ticketId, String callbackUri) {
-        doPaymentRequestAction(ticketId, "capture", callbackUri);
+        doPaymentRequestAction(ticketId, "capture", null, callbackUri);
     }
 
+    @Deprecated
     public void putTicket(String ticketId, Ticket ticket) {
         List<Ticket> tickets = new ArrayList<>();
         tickets.add(ticket);
         putTickets(ticketId, tickets);
     }
 
+    @Deprecated
     public void putTickets(String ticketId, List<Ticket> tickets) {
         Tickets ticketRequest = new Tickets();
         ticketRequest.tickets = tickets;
